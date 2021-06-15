@@ -35,7 +35,7 @@ class Events(commands.Cog):
             deleted = False
 
             for word in filtered_words:
-                if word in message.content and not deleted:
+                if (word.lower() in message.content.lower() or word.lower().replace(" ", "") in message.content.lower().replace(" ", "")) and not deleted:
                     await message.delete()
                     deleted = True
 

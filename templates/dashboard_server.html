@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Dashboard - Moderation Manatee</title>
+    <link rel="stylesheet" type="text/css" href="/static/index.css" />
+    <link rel="stylesheet" type="text/css" href="/static/cards.css" />
+    <style>
+      button {
+        background-color: #0071bc;
+        border: none;
+        color: white;
+        padding: 15px 32px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 16px;
+        border-radius: 10px;
+
+        margin: 0;
+        position: absolute;
+        left: 50%;
+        -ms-transform: translate(-50%, 0%);
+        transform: translate(-50%, 0%);
+      }
+      button:hover {
+        transform: scale(1.1) translate(-45%, 0%);
+        cursor: pointer;
+      }
+
+      .center {
+      }
+    </style>
+
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  </head>
+  <body>
+    <h1>Moderation Manatee Dashboard for {{guild["name"]}}!</h1>
+
+    <div class="configuration">
+      {% if admin %}
+      <div class="administrator-configuration">
+        <form action="#" method="POST">
+          <div class="wrapper">
+            <div class="cards_wrap">
+              <div class="card_item">
+                <div class="card_inner">
+<!--                  <div class="card_top">-->
+<!--                    <img src="/static/card_img.jpg" alt="car" />-->
+<!--                  </div>-->
+                  <div class="card_bottom">
+                    <div class="card_info">
+                      <p class="title"><b>Prefix</b></p>
+                      <p>
+                        Sets the prefix
+                      </p>
+                    </div>
+                    <div class="card_category">
+                      <input type="text" name="newprefix" value="{{prefix}}">
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+
+
+<!--          <p>Prefix:</p>-->
+<!--          <p><input type="text" name="newprefix" value="{{prefix}}"></p>-->
+
+
+          <br>
+          <button class="center" type="submit" value="Save">Save</button>
+        </form>
+      </div>
+      {% endif %}
+      <div class="user-configuration">
+      </div>
+    </div>
+  </body>
+</html>

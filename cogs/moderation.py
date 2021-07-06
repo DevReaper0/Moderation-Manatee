@@ -8,34 +8,34 @@ import cogs._utils
 from cogs._utils import Pag
 
 colors = {
-  'DEFAULT': 0x000000,
-  'WHITE': 0xFFFFFF,
-  'AQUA': 0x1ABC9C,
-  'GREEN': 0x2ECC71,
-  'BLUE': 0x3498DB,
-  'PURPLE': 0x9B59B6,
-  'LUMINOUS_VIVID_PINK': 0xE91E63,
-  'GOLD': 0xF1C40F,
-  'ORANGE': 0xE67E22,
-  'RED': 0xE74C3C,
-  'GREY': 0x95A5A6,
-  'NAVY': 0x34495E,
-  'DARK_AQUA': 0x11806A,
-  'DARK_GREEN': 0x1F8B4C,
-  'DARK_BLUE': 0x206694,
-  'DARK_PURPLE': 0x71368A,
-  'DARK_VIVID_PINK': 0xAD1457,
-  'DARK_GOLD': 0xC27C0E,
-  'DARK_ORANGE': 0xA84300,
-  'DARK_RED': 0x992D22,
-  'DARK_GREY': 0x979C9F,
-  'DARKER_GREY': 0x7F8C8D,
-  'LIGHT_GREY': 0xBCC0C0,
-  'DARK_NAVY': 0x2C3E50,
-  'BLURPLE': 0x7289DA,
-  'GREYPLE': 0x99AAB5,
-  'DARK_BUT_NOT_BLACK': 0x2C2F33,
-  'NOT_QUITE_BLACK': 0x23272A
+    'DEFAULT': 0x000000,
+    'WHITE': 0xFFFFFF,
+    'AQUA': 0x1ABC9C,
+    'GREEN': 0x2ECC71,
+    'BLUE': 0x3498DB,
+    'PURPLE': 0x9B59B6,
+    'LUMINOUS_VIVID_PINK': 0xE91E63,
+    'GOLD': 0xF1C40F,
+    'ORANGE': 0xE67E22,
+    'RED': 0xE74C3C,
+    'GREY': 0x95A5A6,
+    'NAVY': 0x34495E,
+    'DARK_AQUA': 0x11806A,
+    'DARK_GREEN': 0x1F8B4C,
+    'DARK_BLUE': 0x206694,
+    'DARK_PURPLE': 0x71368A,
+    'DARK_VIVID_PINK': 0xAD1457,
+    'DARK_GOLD': 0xC27C0E,
+    'DARK_ORANGE': 0xA84300,
+    'DARK_RED': 0x992D22,
+    'DARK_GREY': 0x979C9F,
+    'DARKER_GREY': 0x7F8C8D,
+    'LIGHT_GREY': 0xBCC0C0,
+    'DARK_NAVY': 0x2C3E50,
+    'BLURPLE': 0x7289DA,
+    'GREYPLE': 0x99AAB5,
+    'DARK_BUT_NOT_BLACK': 0x2C2F33,
+    'NOT_QUITE_BLACK': 0x23272A
 }
 
 
@@ -56,7 +56,7 @@ class Moderation(commands.Cog):
     @commands.has_guild_permissions(kick_members=True)
     async def kick(self, ctx, member: discord.Member, *, reason=None):
         await ctx.guild.kick(user=member, reason=reason)
-        
+
         channel = cogs._utils._get_log_channel(ctx)
         embed = discord.Embed(title=f"{ctx.author.display_name} kicked {member.display_name}", description=reason)
         await channel.send(embed=embed)
@@ -90,7 +90,7 @@ class Moderation(commands.Cog):
         embed = discord.Embed(title=f"{ctx.author.display_name} unbanned {member.display_name}", description=reason)
         await channel.send(embed=embed)
 
-    @tasks.loop(minutes=5)
+    @tasks.loop(minutes=1)
     async def check_current_mutes(self):
         currentTime = datetime.datetime.now()
         mutes = deepcopy(self.bot.muted_users)
@@ -107,9 +107,13 @@ class Moderation(commands.Cog):
                 roles = cogs._json.read_json('muted_roles')
 
                 if str(guild.id) in roles:
-                    role = discord.utils.get(guild.roles, id=int(str(guild.id)))
+                    role = discord.utils.get(ctx.guild.roles, id=int(str(mutes[str(ctx.guild.id)])))
                 else:
                     role = discord.utils.get(guild.roles, name="Muted")
+
+                if role in member.roles:
+                    await member.remove_roles(role)
+                    print(f"Unmuted: {member.display_name}")
 
                 await self.bot.mutes.delete(member.id)
                 try:
@@ -128,15 +132,16 @@ class Moderation(commands.Cog):
     )
     @commands.guild_only()
     @commands.has_guild_permissions(manage_roles=True)
-    async def mute(self, ctx, member: discord.Member, *, time: cogs._utils.TimeConverter=None, reason=None):
+    async def mute(self, ctx, member: discord.Member, *, time: cogs._utils.TimeConverter = None, reason=None):
         roles = cogs._json.read_json('muted_roles')
 
         if str(ctx.guild.id) in roles:
-            role = discord.utils.get(ctx.guild.roles, id=int(str(ctx.guild.id)))
+            role = discord.utils.get(ctx.guild.roles, id=int(str(roles[str(ctx.guild.id)])))
         else:
             role = discord.utils.get(ctx.guild.roles, name="Muted")
         if not role:
-            await ctx.send(f"No muted role was found! Please create one named `Muted` or set one with {cogs._utils._get_prefix(ctx)}set_muted_role")
+            await ctx.send(
+                f"No muted role was found! Please create one named `Muted` or set one with {cogs._utils._get_prefix(ctx)}set_muted_role")
             return
 
         try:
@@ -200,11 +205,11 @@ class Moderation(commands.Cog):
     )
     @commands.guild_only()
     @commands.has_guild_permissions(manage_roles=True)
-    async def unmute(self, ctx, member, *, reason=None):
+    async def unmute(self, ctx, member: discord.Member, *, reason=None):
         data = cogs._json.read_json('muted_roles')
 
         if str(ctx.guild.id) in data:
-            role = discord.utils.get(ctx.guild.roles, id=int(str(ctx.guild.id)))
+            role = discord.utils.get(ctx.guild.roles, id=int(str(data[str(ctx.guild.id)])))
         else:
             role = discord.utils.get(ctx.guild.roles, name="Muted")
         if not role:
@@ -212,15 +217,15 @@ class Moderation(commands.Cog):
                 f"No muted role was found! Please create one named `Muted` or set one with {cogs._utils._get_prefix(ctx)}set_muted_role")
             return
 
+        if role not in member.roles:
+            await ctx.send("This member is not muted.")
+            return
+
         await self.bot.mutes.delete(member.id)
         try:
             self.bot.muted_users.pop(member.id)
         except KeyError:
             pass
-
-        if role not in member.roles:
-            await ctx.send("This member is not muted.")
-            return
 
         await member.remove_roles(role)
         await member.send(f"You have been unmuted in `{ctx.guild.name}`")
@@ -316,7 +321,7 @@ class Moderation(commands.Cog):
     @commands.command(
         name="deletewarn",
         description="Deletes the given warn or every warn for the given user",
-        aliases=["delwarn", "dw"],
+        aliases=["delwarn", "dw", 'delete_warn'],
         usage="<member> [reason]",
     )
     @commands.guild_only()
@@ -360,12 +365,13 @@ class Moderation(commands.Cog):
     @commands.guild_only()
     @commands.has_guild_permissions(manage_messages=True)
     async def purge(self, ctx, amount=15):
-        await ctx.channel.purge(limit=amount+1)
-        
+        await ctx.channel.purge(limit=amount + 1)
+
         channel = cogs._utils._get_log_channel(ctx)
         messages = "message"
         if amount != 1: messages += "s"
-        embed = discord.Embed(title=f"{ctx.author.display_name} purged {ctx.channel}", description=f"{amount} {messages} were cleared")
+        embed = discord.Embed(title=f"{ctx.author.display_name} purged {ctx.channel}",
+                              description=f"{amount} {messages} were cleared")
         await channel.send(embed=embed)
 
     @commands.command(
@@ -375,45 +381,47 @@ class Moderation(commands.Cog):
     )
     @commands.guild_only()
     @commands.has_guild_permissions(manage_channels=True)
-    async def lockdown(self, ctx, channel: discord.TextChannel=None):
+    async def lockdown(self, ctx, channel: discord.TextChannel = None):
         channel = channel or ctx.channel
 
         data = cogs._json.read_json('member_roles')
-        if ctx.guild.default_role not in channel.overwrites and (str(ctx.guild.id) in data and discord.utils.get(ctx.guild.roles, id=int(str(ctx.guild.id))) not in channel.overwrites):
+        if ctx.guild.default_role not in channel.overwrites and (
+                str(ctx.guild.id) in data and discord.utils.get(ctx.guild.roles,
+                                                                id=int(str(ctx.guild.id))) not in channel.overwrites):
             overwrites = {
-                ctx.guild.default_role: discord.PermissionOverwrite(send_messages=False)
+                ctx.guild.default_role: discord.PermissionOverwrite(send_messages=False, view_channel=True)
             }
             await channel.edit(overwrites=overwrites)
 
             embed = discord.Embed(title=f"{ctx.author.display_name} put `{channel.name}` on lockdown",
                                   description=f"<#{channel.id}> is now on lockdown")
-        elif str(ctx.guild.id) in data and (channel.overwrites[discord.utils.get(ctx.guild.roles, id=int(str(ctx.guild.id)))].send_messages == True or channel.overwrites[discord.utils.get(ctx.guild.roles, id=int(str(ctx.guild.id)))].send_messages is None):
-            overwrites = channel.overwrites[discord.utils.get(ctx.guild.roles, id=int(str(ctx.guild.id)))]
-            overwrites.send_messages = False
-            await channel.set_permissions(discord.utils.get(ctx.guild.roles, id=int(str(ctx.guild.id))), overwrites=overwrites)
+        elif str(ctx.guild.id) in data and (channel.overwrites[discord.utils.get(ctx.guild.roles, id=int(
+                str(data[str(ctx.guild.id)])))].send_messages or channel.overwrites[discord.utils.get(ctx.guild.roles,
+                                                                                                      id=int(str(data[
+                                                                                                                     str(
+                                                                                                                         ctx.guild.id)])))].send_messages is None):
+            await channel.set_permissions(discord.utils.get(ctx.guild.roles, id=int(str(data[str(ctx.guild.id)]))),
+                                          send_messages=False, view_channel=True)
 
             embed = discord.Embed(title=f"{ctx.author.display_name} put `{channel.name}` on lockdown",
                                   description=f"<#{channel.id}> is now on lockdown")
-        elif channel.overwrites[ctx.guild.default_role].send_messages == True or channel.overwrites[ctx.guild.default_role].send_messages is None:
-            overwrites = channel.overwrites[ctx.guild.default_role]
-            overwrites.send_messages = False
-            await channel.set_permissions(ctx.guild.default_role, overwrites=overwrites)
+        elif channel.overwrites[ctx.guild.default_role].send_messages or channel.overwrites[
+            ctx.guild.default_role].send_messages is None:
+            await channel.set_permissions(ctx.guild.default_role, send_messages=False, view_channel=True)
             embed = discord.Embed(title=f"{ctx.author.display_name} put `{channel.name}` on lockdown",
                                   description=f"<#{channel.id}> is now on lockdown")
         else:
             if str(ctx.guild.id) in data:
-                overwrites = channel.overwrites[discord.utils.get(ctx.guild.roles, id=int(str(ctx.guild.id)))]
-                overwrites.send_messages = False
-                await channel.set_permissions(discord.utils.get(ctx.guild.roles, id=int(str(ctx.guild.id))), overwrites=overwrites)
+                await channel.set_permissions(discord.utils.get(ctx.guild.roles, id=int(str(data[str(ctx.guild.id)]))),
+                                              send_messages=True, view_channel=True)
             else:
-                overwrites = channel.overwrites[ctx.guild.default_role]
-                overwrites.send_messages = False
-                await channel.set_permissions(ctx.guild.default_role, overwrites=overwrites)
+                await channel.set_permissions(ctx.guild.default_role, send_messages=True, view_channel=True)
 
             embed = discord.Embed(title=f"{ctx.author.display_name} removed `{channel.name}` from lockdown",
                                   description=f"<#{channel.id}> is no longer on lockdown")
 
         await channel.send(embed=embed)
+
 
 def setup(bot):
     bot.add_cog(Moderation(bot))

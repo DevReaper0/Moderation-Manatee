@@ -214,7 +214,9 @@ class Misc(commands.Cog):
         words_string = "`"
         for i in range(len(new_words)):
             words_string += new_words[i]
-            if i < len(new_words) - 2:
+            if len(new_words) == 2:
+                words_string += " and "
+            elif i < len(new_words) - 2:
                 words_string += "`, `"
             elif i == len(new_words) - 2:
                 words_string += "`, and `"
@@ -226,8 +228,8 @@ class Misc(commands.Cog):
     @commands.command(
         name='get_filtered_words',
         description='Gives the filtered words for the current server',
-        aliases=['getFilteredWords', 'give_filtered_words', 'giveFilteredWords', 'say_filtered_words',
-                 'sayFilteredWords'],
+        aliases=['getfilteredwords', 'give_filtered_words', 'givefilteredwords', 'say_filtered_words',
+                 'sayfilteredwords'],
         usage=''
     )
     @commands.has_permissions(administrator=True)

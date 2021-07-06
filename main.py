@@ -1,19 +1,25 @@
+import discord
 from discord.ext import commands, ipc
-# Import the keep alive file
-import keep_alive
+from AntiSpam import AntiSpamHandler
+from AntiSpam.ext import AntiSpamTracker
 import os
+import random
+import asyncio
 import replit
 
 from pathlib import Path
 import motor.motor_asyncio
 
+import keep_alive
+
 from cogs._mongo import Document
 import cogs._json
 import cogs._utils
 
-from dotenv import load_dotenv
+if os.path.exists(".env"):
+    from dotenv import load_dotenv
 
-load_dotenv()
+    load_dotenv()
 
 
 class Bot(commands.Bot):
@@ -39,7 +45,7 @@ class Bot(commands.Bot):
 
 def get_prefix(client, message):
     data = cogs._json.read_json('prefixes')
-    if not str(message.guild.id) in data or data[str(message.guild.id)] == "=":
+    if not message.guild or not str(message.guild.id) in data or data[str(message.guild.id)] == "=":
         prefixes = ['=']
 
         if not message.guild:
@@ -56,6 +62,10 @@ bot = Bot(
     owner_id=595353331468075018,  # Your unique User ID
     case_insensitive=True  # Make the commands case insensitive
 )
+
+bot.handler = AntiSpamHandler(bot, no_punish=True)
+bot.tracker = AntiSpamTracker(bot.handler, 3) # 3 Being how many 'punishment requests' before is_spamming returns True
+bot.handler.register_extension(bot.tracker)
 
 # case_insensitive=True is used as the commands are case sensitive by default
 
@@ -94,7 +104,7 @@ async def on_ready():
     replit.clear()
     print(f'Logged in as {bot.user.name} - {bot.user.id}')
 
-    # Change status here
+    await bot.change_presence(activity=discord.Game(name="The Game of Life"))
 
     bot.mongo = motor.motor_asyncio.AsyncIOMotorClient(str(bot.connection_url))
     bot.db = bot.mongo["darubyminer360"]
@@ -114,9 +124,23 @@ async def on_ready():
     return
 
 
+async def ch_pr():
+    await bot.wait_until_ready()
+
+    statuses = ["The Game of Life", "=help", "discord.py", f"on {len(bot.guilds)} servers"]
+
+    while not bot.is_closed():
+        status = random.choice(statuses)
+
+        await bot.change_presence(activity=discord.Game(name=status))
+
+        await asyncio.sleep(10)
+
+
 # Start the server
 keep_alive.keep_alive(bot)
 
 # Finally, login the bot
+bot.loop.create_task(ch_pr())
 bot.ipc.start()
 bot.run(os.environ.get('TOKEN'), bot=True, reconnect=True)
